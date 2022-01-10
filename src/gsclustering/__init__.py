@@ -10,7 +10,7 @@ def _update_L(X, zs, M, Theta, alpha_1, alpha_2, rho):
 
     A = (alpha_1/(2*alpha_1*alpha_2 + rho))*(X@np.diag(zs)@X.T + (rho/alpha_1)*M + (1/alpha_1)*Theta)
     
-    rowsum = np.sum(A, axis=1)
+    rowsum = np.sum(A, axis=1)[..., None]
     allsum = np.sum(rowsum)
     trace = np.trace(A)
 
@@ -19,8 +19,8 @@ def _update_L(X, zs, M, Theta, alpha_1, alpha_2, rho):
     A += trace/(n*(n-1))
     A -= 1/(n-1)
 
-    A[np.diag_indices(n)] -= ((n-2)/(n*n*(n-1)))*allsum
-    A[np.diag_indices(n)] -= ((n-2)/(n*(n-1)))*trace
+    A[np.diag_indices(n)] += (n/(n*n*(n-1)))*allsum
+    A[np.diag_indices(n)] -= (n/(n*(n-1)))*trace
     A[np.diag_indices(n)] += 1/(n-1) + 1
     
     return A
@@ -38,13 +38,13 @@ def _update_Z(Lc, X, L, Y, Lambda, alpha_1, rho, ss, Z0):
 
     # Keep it for now for debugging, might remove later
     obj = lambda Z: np.trace(Z.T@Lc@Z) + alpha_1*np.trace(Z.T@Q) + \
-                    (rho/2)*np.linalg.norm(Z - Y + (1/rho)*Lambda)
+                    (rho/2)*np.linalg.norm(Z - Y + (1/rho)*Lambda)**2
     obj_vals = []
 
     for iter in range(100):
-        Z1 = np.maximum(
-            0, (1+ss*rho*sp.sparse.eye(n_signals) - 2*ss*Lc)@F - ss*(alpha_1*Q-rho*Y+Lambda)
-        )
+        Z1 = np.minimum(1, np.maximum(
+            0, ((1 - ss*rho)*sp.sparse.eye(n_signals) - 2*ss*Lc)@F - ss*(alpha_1*Q-rho*Y+Lambda)
+        ))
         theta = (1+np.sqrt(1 + 4*theta_prev**2))/2
 
         F = Z1 + ((theta - 1)/theta_prev)*(Z1 - Z0)
@@ -72,7 +72,7 @@ def _objective(Lc, X, Z, L, alpha_1, alpha_2):
     
     res = np.trace(Z.T@Lc@Z)
     for s, Ls in enumerate(L):
-        res += alpha_1*(np.trace(np.diag(Z[:, s])@X.T@L@X) + alpha_2*np.linalg.norm(Ls)**2)
+        res += alpha_1*(np.trace(np.diag(Z[:, s])@X.T@Ls@X) + alpha_2*np.linalg.norm(Ls)**2)
     
     return res
 
@@ -84,7 +84,7 @@ def _lagrangian(Lc, X, Z, Y, L, M, Lambda, Theta, alpha_1, alpha_2, rho):
     for s, Ls in enumerate(L):
         res += np.trace(Theta[s].T@(Ls - M[s])) + 0.5*rho*np.linalg.norm(Ls-M[s])**2
 
-    pass
+    return res
 
 def cluster_gs(X, Lc, alpha_1, alpha_2, k, rho, max_iter=1000, seed=None, return_obj=False):
     # TODO: Docstring
@@ -100,7 +100,9 @@ def cluster_gs(X, Lc, alpha_1, alpha_2, k, rho, max_iter=1000, seed=None, return
     Theta = [np.zeros((n_nodes, n_nodes)) for s in range(k)]
 
     # Optimization params
-    fista_step_size = 2*np.linalg.norm(Lc, 2) + rho
+    spectral_norm_Lc, _ = sp.sparse.linalg.eigsh(Lc, k=1)
+    spectral_norm_Lc = spectral_norm_Lc.item()
+    fista_step_size = 1/(2*spectral_norm_Lc + rho)
 
     if return_obj: # should I return objective and lagrangian values at each iteration?
         objective_vals = []
@@ -131,3 +133,5 @@ def cluster_gs(X, Lc, alpha_1, alpha_2, k, rho, max_iter=1000, seed=None, return
         if return_obj:
             objective_vals.append(_objective(Lc, X, Z, L, alpha_1, alpha_2))
             lagrangian_vals.append(_lagrangian(Lc, X, Z, Y, L, M, Lambda, Theta, alpha_1, alpha_2, rho))
+
+    return objective_vals, lagrangian_vals
