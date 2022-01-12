@@ -8,6 +8,14 @@ def _project_hyperplane(v, n):
     return v - (n + np.sum(v))/(len(v))
 
 def _gl(k, d, alpha1, alpha2, degree_reg="l2"):
+    """ Learn smooth graphs using linearized ADMM as described in [1].
+    
+    References
+    ----------
+    .. [1] Wang, Xiaolu, et al. "An Efficient Alternating Direction Method for Graph Learning from 
+       Smooth Signals." ICASSP 2021-2021 IEEE International Conference on Acoustics, Speech and 
+       Signal Processing (ICASSP). IEEE, 2021.
+    """
     n = len(d) # number of nodes
     m = len(k) # number of node pairs
 

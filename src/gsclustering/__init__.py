@@ -299,7 +299,11 @@ def _objective_bcd(Lc, X, Z, l, alpha_1, alpha_2, S):
     
     return res
 
-def cluster_gs_bcd(X, Lc, n_clusters, alpha_1, alpha_2, max_iter=100, seed=None):
+def _project_to_steifel(Z):
+    U, _, Vt = np.linalg.svd(Z, full_matrices=False)
+    return U@Vt
+
+def cluster_gs_bcd(X, Lc, n_clusters, alpha_1, alpha_2, max_iter=500, seed=None):
     n_nodes, n_signals = X.shape
     n_pairs = n_nodes*(n_nodes-1)//2
 
@@ -325,7 +329,7 @@ def cluster_gs_bcd(X, Lc, n_clusters, alpha_1, alpha_2, max_iter=100, seed=None)
 
     step_size_l = 4*alpha_2*n_nodes # Lipschitz constant of gradient of f wrt ls
 
-    w = 1 # Extrapolation weight
+    w = .8 # Extrapolation weight
 
     for iter in range(max_iter):
         ## Update Ls
@@ -360,9 +364,9 @@ def cluster_gs_bcd(X, Lc, n_clusters, alpha_1, alpha_2, max_iter=100, seed=None)
 
         Z_prev = Z
 
-        Z = _project_to_simplex(V)
+        Z = _project_to_steifel(V)
 
-        # print(_objective_bcd(Lc, X, Z, l, alpha_1, alpha_2, S))
+        print(_objective_bcd(Lc, X, Z, l, alpha_1, alpha_2, S))
 
     # Convert vectorized laplacian to adjacency matrices
     W = []
