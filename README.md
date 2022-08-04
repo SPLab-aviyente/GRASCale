@@ -1,6 +1,6 @@
 # GRASCale
 
-Python implementation of simultaneous GRaph Signal Clustering And graph LEarning (GRASCale) algorithm presented in [1]. 
+Python implementation of simultaneous GRAph Signal Clustering And graph LEarning (GRASCale) algorithm presented in [1]. 
 
 ## Installation
 Once you download the repo, go to the repo directory and start a terminal. First, create an 
