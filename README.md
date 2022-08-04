@@ -24,8 +24,8 @@ directory, then:
 conda activate grascale
 python scripts/experiment1.py
 ```
-It will print F1 score, NMI and density of the graph. The script for the experiment 2 of the paper 
-will also be published soon. 
+It will print F1 score, NMI and density of the learned graphs associated with clusters. 
+The script for the experiment 2 of the paper will also be published soon. 
 
 ### References
   - [1] [Karaaslanli, Abdullah, and Selin Aviyente. "Simultaneous Graph Signal Clustering and Graph Learning." International Conference on Machine Learning. PMLR, 2022.] (https://proceedings.mlr.press/v162/karaaslanli22a.html)
